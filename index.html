@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+		<title> Real time multi-player games with HTML5</title>
+
+		<style type="text/css">
+
+			html , body {
+				font-family: Helvetica;
+				background: #212121; 
+				color: #fff; 
+				margin: 0; 
+				padding: 0;
+			}
+			
+			#viewport {
+				position: absolute;
+				left: 0; right: 0; top: 0; bottom: 0; 
+				margin: auto;
+				width : 720px;
+				height : 480px;
+				border:solid 1px #333;
+				z-index:100;
+			}
+
+			#debug-viewport {
+				position: absolute;
+				left: 0; right: 0; top: 0; bottom: 0; 
+				margin: auto;
+				width : 720px;
+				height : 480px;
+				border:solid 1px #333;
+				z-index:101;
+			}
+
+		</style>
+
+		 	<!-- Load socket.io client side contents. -->
+		<script src="/socket.io/socket.io.js"></script>
+
+	 		<!-- Load the tweening library code. -->
+		<script type="text/javascript" src="lib/tween.js"></script>
+	 		<!-- Load the GUI rendering library code. -->
+		<script type="text/javascript" src="lib/dat.gui.min.js"></script>
+			<!-- Load the keyboard specific code --> 
+		<script type="text/javascript" src="lib/keyboard.js"></script>
+	 	
+	 		<!-- Load the common game code. -->
+		<script type="text/javascript" src="simplest.game.core.js"></script>
+			<!-- Finally, Load the game client code. -->
+		<script type="text/javascript" src="simplest.client.js"></script>		
+
+	</head>
+
+	<body>
+							
+		<canvas id="debug-viewport"></canvas>	
+		<canvas id="viewport"></canvas>	
+
+	</body>
+
+</html>
