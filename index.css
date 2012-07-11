@@ -1,0 +1,16 @@
+html , body {
+	background: #212121; 
+	color: #fff; 
+	font-family: Helvetica;
+	margin: 0; 
+	padding: 0;
+}
+
+#viewport {
+	border:solid 1px #333;
+	height : 480px;
+	margin: auto;
+	position: absolute;
+	width : 720px;
+	z-index:100;
+}
