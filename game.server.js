@@ -1,4 +1,11 @@
+/*  Copyright (c) 2012 Sven "FuzzYspo0N" Bergström
     
+    written by : http://underscorediscovery.com
+    written for : http://buildnewgames.com/real-time-multiplayer/
+    
+    MIT Licensed.
+*/
+
     var
         game_server = module.exports = { games : {}, game_count:0 },
         UUID        = require('node-uuid'),
