@@ -13,4 +13,4 @@ An example using node.js, socket.io and HTML5 Canvas to explain and demonstrate 
 * Install node-udid `npm install node-uuid`
 * Install express `npm install express`
 * Run node app.js
-* Visit http://127.0.0.1:4004?debug
+* Visit http://127.0.0.1:4004/?debug
