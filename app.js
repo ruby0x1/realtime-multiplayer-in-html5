@@ -16,7 +16,9 @@
         UUID            = require('node-uuid'),
 
         verbose         = false,
-        app             = express.createServer();
+        http            = require('http'),
+        app             = express(),
+        server          = http.createServer(app);
 
 /* Express server set up. */
 
@@ -26,13 +28,14 @@
 //so keep this in mind - this is not a production script but a development teaching tool.
 
         //Tell the server to listen for incoming connections
-    app.listen( gameport );
+    server.listen(gameport)
 
         //Log something so we know that it succeeded.
     console.log('\t :: Express :: Listening on port ' + gameport );
 
         //By default, we forward the / path to index.html automatically.
     app.get( '/', function( req, res ){
+        console.log('trying to load %s', __dirname + '/index.html');
         res.sendfile( __dirname + '/index.html' );
     });
 
@@ -60,7 +63,7 @@
 //This way, when the client requests '/socket.io/' files, socket.io determines what the client needs.
         
         //Create a socket.io instance using our express server
-    var sio = io.listen(app);
+    var sio = io.listen(server);
 
         //Configure the socket.io connection settings.
         //See http://socket.io/
