@@ -24,5 +24,7 @@ An example using node.js, socket.io and HTML5 Canvas to explain and demonstrate 
 * Run `node app.js` inside the cloned folder
 * Visit http://127.0.0.1:4004/?debug
 
+## License
 
-MIT Licensed.
+MIT Licensed. 
+See LICENSE if required.
