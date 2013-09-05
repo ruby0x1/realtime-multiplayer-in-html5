@@ -36,7 +36,7 @@
         //By default, we forward the / path to index.html automatically.
     app.get( '/', function( req, res ){
         console.log('trying to load %s', __dirname + '/index.html');
-        res.sendfile( __dirname + '/index.html' );
+        res.sendfile( '/index.html' , { root:__dirname });
     });
 
 
