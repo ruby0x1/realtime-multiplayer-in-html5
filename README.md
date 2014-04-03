@@ -28,3 +28,7 @@ An example using node.js, socket.io and HTML5 Canvas to explain and demonstrate 
 
 MIT Licensed. 
 See LICENSE if required.
+
+## Support more work like this?
+
+[![No obligation, through gittip](https://rawgithub.com/twolfson/gittip-badge/0.2.0/dist/gittip.png)](https://www.gittip.com/underscorediscovery/)
