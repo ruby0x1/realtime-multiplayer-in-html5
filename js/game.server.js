@@ -107,62 +107,40 @@
 
     }; //game_server.onInput
 
-        //Define some required functions
+    // create the game
     game_server.createGame = function(client) {
 
-
-            //Create a new game instance
-        
         var gamePlayers = [];
-
 
         var player = new gamePlayer(client);
         gamePlayers.push(player);
 
-        var thegame = {
-                id : UUID(),                //generate a new id for the game
-                player_host: player,         //so we know who initiated the game // player_host
-                // player_client: null,
+        var game = {
+                id : UUID(),
                 players: gamePlayers,
                 serverGamecore: undefined
             };
 
-        thegame.serverGamecore = new game_core(gamePlayers);
-        thegame.serverGamecore.update(new Date().getTime());
+        game.serverGamecore = new game_core(gamePlayers);
+        game.serverGamecore.update(new Date().getTime());
 
-        client.game = thegame;
+        client.game = game;
 
-            //Store it in the list of game
-        this.games[thegame.id] = thegame;
-
-            //Keep track
+        this.games[game.id] = game;
         this.game_count++;
 
-            //Create a new game core instance, this actually runs the
-            //game code like collisions and such.
-         // todo inject interface here
-            //Start updating the game loop on the server
-        
+        player.send('s.h.'+ String(game.serverGamecore.local_time).replace('.','-'));
+        console.log('server host at  ' + game.serverGamecore.local_time);
+        this.log('player ' + player.userid + ' created a game with id ' + game.id);
 
-            //tell the player that they are now the host
-            //s=server message, h=you are hosting
-
-        player.send('s.h.'+ String(thegame.serverGamecore.local_time).replace('.','-'));
-        console.log('server host at  ' + thegame.serverGamecore.local_time);
-        // player.game = thegame;
-        // player.hosting = true;
-        
-        this.log('player ' + player.userid + ' created a game with id ' + thegame.id);
-
-            //return it
-        return thegame;
-
-    }; //game_server.createGame
+        return game;
+    };
 
     // notify all the players that the game has started
     game_server.startGame = function(game) {
-        console.log("host = ", game.player_host.userid);
+        // console.log("host = ", game.player_host.userid);
         console.log("start, availgame players length ", game.players.length);
+        game.serverGamecore.intializeGame();
         for (var i = 0; i < game.players.length; i++) {
             game.players[i].send('s.r.'+ String(game.serverGamecore.local_time).replace('.','-'));
         }
@@ -179,7 +157,7 @@
             // availableGame.player_client = p;
             availableGame.players.push(p);
             client.game = availableGame;
-            p.send('s.j.' + availableGame.player_host.userid);
+            p.send('s.j.' + p.userid); //availableGame.player_host
             for (var i = 0; i < availableGame.players.length; i++) {
                 var existingplayer = availableGame.players[i];
                 if (existingplayer.userid !== p.userid) {

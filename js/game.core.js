@@ -155,8 +155,8 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
             this.client_create_ping_timer();
 
                 //Set their colors from the storage or locally
-            this.color = localStorage.getItem('color') || '#cc8822' ;
-            localStorage.setItem('color', this.color);
+            this.color = this.getRandomColor();//localStorage.getItem('color') || '#cc8822' ;
+            //localStorage.setItem('color', this.color);
             this.playerself.color = this.color;
 
                 //Make this only if requested
@@ -204,27 +204,24 @@ game_core.prototype.stop_update = function() {  window.cancelAnimationFrame( thi
 game_core.prototype.lerp = function(p, n, t) { var _t = Number(t); _t = (Math.max(0, Math.min(1, _t))).fixed(); return (p + _t * (n - p)).fixed(); };
     //Simple linear interpolation between 2 vectors
 game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x, t), y:this.lerp(v.y, tv.y, t) }; };
-    //convert deg to rad
-
+    
 game_core.prototype.randomInRange = function(min, max) {
     return Math.random() * (max - min) + min;
 };
 
 game_core.prototype.getRandomPostion = function() {
     return {
-        x: this.randomInRange(0, this.world.x),
-        y: this.randomInRange(0, this.world.y)
+        x: Math.random() * this.world.width,
+        y: Math.random() * this.world.height
     };
 };
-
 /*
     The player class
 
         A simple class to maintain state of a player on screen,
         as well as to draw that state when required.
 */
-
-    
+  
 
 /*
 
@@ -256,6 +253,16 @@ game_core.prototype.update = function(t) {
     this.updateid = window.requestAnimationFrame( this.update.bind(this), this.viewport );
 
 }; //game_core.update
+
+game_core.prototype.intializeGame = function () {
+    for (var i = 0; i < this.players.length; i++) {
+        var player = this.players[i];
+        var npos = this.getRandomPostion();
+        console.log('npos =', npos);
+        player.pos = this.pos(npos);
+    }
+    this.server_update();
+};
 
 /*
     Shared between server and client.
@@ -346,10 +353,6 @@ game_core.prototype.process_input = function( player ) {
     return resulting_vector;
 
 }; //game_core.process_input
-
-// game_core.prototype.add_player = function(player_instance) {
-//     this.players.push(new gamePlayer(this, player_instance));
-// };
 
 game_core.prototype.physics_movement_vector_from_direction = function(direction) {
 
@@ -463,32 +466,14 @@ game_core.prototype.server_update = function(){
         this.laststate.players.push(pdata);
     }
 
-    // bigmessage
-    //console.log("last state playesr ", this.laststate.players);
-
     for (var i = 0; i < this.players.length; i++) {
         this.players[i].emit('onserverupdate', this.laststate);
     }
-
-    //Send the snapshot to the 'host' player
-    // if(this.players.self.instance) {
-    //     this.players.self.instance.emit( 'onserverupdate', this.laststate );
-    // }
-
-        //Send the snapshot to the 'client' player
-    // if(this.players.other.instance) {
-    //     this.players.other.instance.emit( 'onserverupdate', this.laststate );
-    // }
 
 }; //game_core.server_update
 
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
-    // console.log("isServer ", this.isServer);
-    // console.log("number of players=", this.players.length);
-    // for (var p in this.players) {
-    //     console.log("player id", this.players[p].userid);
-    // }
     var player = this.get_player(this.players, client.userid);
     player.inputs.push({inputs:input, time:input_time, seq:input_seq});
 };
@@ -605,13 +590,6 @@ game_core.prototype.client_process_net_prediction_correction = function() {
             my_server_last_input_seq = player.last_input_seq;
         }
     }
-
-        //Our latest server position
-    // var my_server_pos = this.playerself.host ? latest_server_data.hp : latest_server_data.cp;
-
-    // var my_server_vel = this.playerself.host ? latest_server_data.hv : latest_server_data.cv;
-
-    // var my_server_rot = this.playerself.host ? latest_server_data.hr : latest_server_data.cr;
 
         //Update the debug server position block
     // this.ghosts.server_pos_self.pos = this.pos(my_server_pos);
@@ -789,13 +767,6 @@ game_core.prototype.get_player = function(players, userid) {
 };
 
 game_core.prototype.client_onserverupdate_recieved = function(data){
-
-            //Lets clarify the information we have locally. One of the players is 'hosting' and
-            //the other is a joined in client, so we name these host and client for making sure
-            //the positions we get from the server are mapped onto the correct local sprites
-        // var player_host = this.playerself.host ?  this.playerself : this.players.other;
-        // var player_client = this.playerself.host ?  this.players.other : this.players.self;
-        // var this_player = this.playerself;
         
             //Store the server time (this is offset by the latency in the network, by the time we get it)
         this.server_time = data.t;
@@ -1081,9 +1052,8 @@ game_core.prototype.client_reset_positions = function() {
 
     console.log("positions have been reset");
 
-        //Host always spawns at the top left.
-    var resetpos = { x:20, y:20 };
-    var resetvel = { x:0, y:0 };
+    var resetpos = {x: 0, y: 0};
+    var resetvel = {x: 0, y: 0};
     var resetrot = 0;
 
         //Make sure the local player physics is updated
@@ -1116,26 +1086,14 @@ game_core.prototype.client_onreadygame = function(data) {
 
     var server_time = parseFloat(data.replace('-','.'));
 
-    // var player_host = this.players.self.host ?  this.players.self : this.players.other;
-    // var player_client = this.players.self.host ?  this.players.other : this.players.self;
-
     this.local_time = server_time + this.net_latency;
     console.log('server time is about ' + this.local_time);
 
         //Store their info colors for clarity. server is always blue
     for (var i = 0; i < this.players.length; i++) {
-        if (this.players[i].host) {
-            this.players[i].state = 'local_pos(hosting)';
-            this.players[i].info_color = '#2288cc';
-        } else {
-            this.players[i].state = 'local_pos(joined)';
-            this.players[i].info_color = '#cc8822';
-        }
+        this.players[i].state = 'local_pos(joined)';
+        this.players[i].info_color = '#666666';
     }
-        
-        //Update their information
-    // player_host.state = 'local_pos(hosting)';
-    // player_client.state = 'local_pos(joined)';
 
     this.playerself.state = 'YOU ' + this.playerself.state;
 
@@ -1145,82 +1103,52 @@ game_core.prototype.client_onreadygame = function(data) {
 }; //client_onreadygame
 
 game_core.prototype.client_onjoingame = function(data) {
-
-    console.log("joining, data =", data);
-    //console.log("playerself, ", this.playerself);
-    //this.players.push(new gamePlayer({userid: data}));
-        //We are not the host
-    this.playerself.host = false;
-    //console.log(this.players);
-        //Update the local state
     this.playerself.state = 'connected.joined.waiting';
     this.playerself.info_color = '#00bb00';
-
-    for (var i = 0; i < this.players.length; i++) {
-        if (this.players[i].userid === ("" + data)) {
-            
-            this.players[i].host = true;
-        } else {
-            console.log("not equal,", this.players[i].userid);
-            console.log("to,", data);
-        }
-    }
-        //Make sure the positions match servers and other clients
     this.client_reset_positions();
-
-}; //client_onjoingame
+};
 
 game_core.prototype.client_onhostgame = function(data) {
 
-        //The server sends the time when asking us to host, but it should be a new game.
-        //so the value will be really small anyway (15 or 16ms)
+    //The server sends the time when asking us to host, but it should be a new game.
+    //so the value will be really small anyway (15 or 16ms)
     var server_time = parseFloat(data.replace('-','.'));
 
-        //Get an estimate of the current time on the server
+    //Get an estimate of the current time on the server
     this.local_time = server_time + this.net_latency;
 
-        //Set the flag that we are hosting, this helps us position respawns correctly
-    this.playerself.host = true;
-
-        //Update debugging information to display state
-    this.playerself.state = 'hosting.waiting for a player';
+    this.playerself.state = 'waiting for a player';
     this.playerself.info_color = '#cc0000';
 
-        //Make sure we start in the correct place as the host.
     this.client_reset_positions();
-
-}; //client_onhostgame
+};
 
 game_core.prototype.client_onconnected = function(data) {
 
-        //The server responded that we are now in a game,
-        //this lets us store the information about ourselves and set the colors
-        //to show we are now ready to be playing.
+    //The server responded that we are now in a game,
+    //this lets us store the information about ourselves and set the colors
+    //to show we are now ready to be playing.
     this.playerself.userid = data.userid;
     this.playerself.info_color = '#cc0000';
     this.playerself.state = 'connected';
     this.playerself.online = true;
 
-}; //client_onconnected
+};
 
 game_core.prototype.client_on_otherclientcolorchange = function(data, userid) {
     
     var player = this.get_player(this.players, userid);
     if (player) {
-        console.log("got player ");
         player.color = data;
     } else {
         console.log("no player to update color");
     }
-
-}; //game_core.client_on_otherclientcolorchange
+};
 
 game_core.prototype.client_onping = function(data) {
-
     this.net_ping = new Date().getTime() - parseFloat( data );
     this.net_latency = this.net_ping/2;
-
-}; //client_onping
+};
 
 game_core.prototype.client_onnetmessage = function(data) {
 
@@ -1380,16 +1308,11 @@ game_core.prototype.client_draw_info = function() {
 
     } //if this.show_help
 
-        //Draw some information for the host
-    if(this.playerself.host) {
-
-        this.ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        this.ctx.fillText('You are the host', 10 , 465);
-
-    } //if we are the host
-
-
         //Reset the style back to full white.
     this.ctx.fillStyle = 'rgba(255,255,255,1)';
 
 }; //game_core.client_draw_help
+
+game_core.prototype.getRandomColor = function() {
+    return '#'+Math.floor((Math.random()*8388607 ) + 8388607 ).toString(16);
+}; 
