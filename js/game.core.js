@@ -1204,8 +1204,7 @@ game_core.prototype.client_onconnected = function(data) {
 }; //client_onconnected
 
 game_core.prototype.client_on_otherclientcolorchange = function(data, userid) {
-    console.log("color change, args ", arguments);
-    // this.players.other.color = data;
+    
     var player = this.get_player(this.players, userid);
     if (player) {
         console.log("got player ");
