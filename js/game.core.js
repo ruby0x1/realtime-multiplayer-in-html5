@@ -62,6 +62,11 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
             height : 480
         };
 
+        this.tagSwitch = true;
+        this.tagCollision = false;
+        this.tagUserid = null;
+        this.tagChanged = false;
+
         // how much drag space has. reduces the ships speed
         this.dampening_amount = 0.02;
         this.max_velocity = 100;
@@ -261,6 +266,8 @@ game_core.prototype.intializeGame = function () {
         console.log('npos =', npos);
         player.pos = this.pos(npos);
     }
+    this.tagUserid = this.players[0].userid;
+    this.tagChanged = true;
     this.server_update();
 };
 
@@ -268,7 +275,7 @@ game_core.prototype.intializeGame = function () {
     Shared between server and client.
     In this example, `item` is always of type gamePlayer.
 */
-game_core.prototype.check_collision = function(gamePlayer) {
+game_core.prototype.check_boundry_collision = function(gamePlayer) {
 
      var pos_limits = {
         x_min: gamePlayer.size.hx,
@@ -301,7 +308,7 @@ game_core.prototype.check_collision = function(gamePlayer) {
     gamePlayer.pos.x = gamePlayer.pos.x.fixed(4);
     gamePlayer.pos.y = gamePlayer.pos.y.fixed(4);
     
-}; //game_core.check_collision
+};
 
 
 game_core.prototype.process_input = function( player ) {
@@ -352,7 +359,7 @@ game_core.prototype.process_input = function( player ) {
         //give it back
     return resulting_vector;
 
-}; //game_core.process_input
+};
 
 game_core.prototype.physics_movement_vector_from_direction = function(direction) {
 
@@ -362,7 +369,7 @@ game_core.prototype.physics_movement_vector_from_direction = function(direction)
         y : (direction.y * (this.playerspeed * 0.015)).fixed(3)
     };
 
-}; //game_core.physics_movement_vector_from_direction
+};
 
 game_core.prototype.update_physics = function() {
 
@@ -372,7 +379,7 @@ game_core.prototype.update_physics = function() {
         this.client_update_physics();
     }
 
-}; //game_core.prototype.update_physics
+};
 
 /*
 
@@ -386,17 +393,50 @@ game_core.prototype.update_physics = function() {
     //Updated at 15ms , simulates the world state
 game_core.prototype.server_update_physics = function() {
 
+    this.tagCollision = false;
+    var newTagUserid;
+
     for (var i = 0; i < this.players.length; i++) {
         this.players[i] = this.updatePlayerPhysics(this.players[i]);
-    }
+        this.check_boundry_collision(this.players[i]);
 
-    //Keep the physics position in the world
-    for (var i = 0; i < this.players.length; i++) {
-        this.check_collision(this.players[i]);
+        for (var j = (i + 1); j < this.players.length; j++) {
+            if (this.isColliding(this.players[i], this.players[j])) {
+                //console.log("players are colliding");
+                if (this.players[i].userid === this.tagUserid || this.players[j].userid === this.tagUserid) {
+                    this.tagCollision = true;
+                    //console.log("tag player colliding");
+                    newTagUserid = this.players[i].userid === this.tagUserid ? this.players[j].userid : this.players[i].userid;
+                }
+            }
+        }
+
         this.players[i].inputs = []; //we have cleared the input buffer, so remove this
     }
 
-}; //game_core.server_update_physics
+    if (!this.tagSwitch && this.tagCollision) {
+        this.tagSwitch = true;
+        // onCollide
+        console.log("onCollide, new tag user is ", newTagUserid);
+        this.tagUserid = newTagUserid;
+        this.tagChanged = true;
+    }
+    if (this.tagSwitch && !this.tagCollision) {
+        this.tagSwitch = false;
+        // onCollideStop
+    }
+
+};
+
+// todo optomize
+game_core.prototype.isColliding = function(a, b) {
+    var circle1 = {x: a.pos.x, y: a.pos.y, radius: (a.size.x * 0.5)};
+    var circle2 = {x: b.pos.x, y: b.pos.y, radius: (b.size.x * 0.5)};
+    var dx = (circle1.x + circle1.radius) - (circle2.x + circle2.radius);
+    var dy = (circle1.y + circle1.radius) - (circle2.y + circle2.radius);
+    var distance = Math.sqrt(dx * dx + dy * dy);
+    return (distance < circle1.radius + circle2.radius);
+};
 
 game_core.prototype.updatePlayerPhysics = function(player) {
     player.old_state.pos = player.pos;
@@ -452,6 +492,11 @@ game_core.prototype.server_update = function(){
         t   : this.server_time, // our current local time on the server
         players : []
     };
+
+    //if (this.tagChanged) {
+        this.laststate.tagUserid = this.tagUserid;
+        //this.tagChanged = false;
+    //}
 
     // todo only add the values that change!
     for (var i = 0; i < this.players.length; i++) {
@@ -721,6 +766,11 @@ game_core.prototype.client_process_net_updates = function() {
             
         }
 
+        //if(latest_server_data.tagUserid) {
+            //console.log("received new tag id form server", latest_server_data.tagUserid);
+            this.tagUserid = latest_server_data.tagUserid;
+        //}
+
             //Now, if not predicting client movement , we will maintain the local player position
             //using the same method, smoothing the players information from the past.
         if(!this.client_predict && !this.naive_approach) {
@@ -841,7 +891,7 @@ game_core.prototype.client_update_local_position = function(){
         this.playerself.rot = current_state_rot;
         
             //We handle collision on client if predicting.
-        this.check_collision( this.playerself );
+        this.check_boundry_collision( this.playerself );
     }  //if(this.client_predict)
 }; //game_core.prototype.client_update_local_position
 
@@ -1150,6 +1200,10 @@ game_core.prototype.client_onping = function(data) {
     this.net_latency = this.net_ping/2;
 };
 
+game_core.prototype.client_ontagged = function(data) {
+    this.tagUserid = data;
+};
+
 game_core.prototype.client_onnetmessage = function(data) {
 
     var commands = data.split('.');
@@ -1174,6 +1228,9 @@ game_core.prototype.client_onnetmessage = function(data) {
 
                 case 'e' : //end game requested
                     this.client_ondisconnect(commanddata); break;
+
+                case 't' : //end game requested
+                    this.client_ontagged(commanddata); break;
 
                 case 'a' : //add player requested
                     this.client_onaddplayer(commanddata); break;
@@ -1266,6 +1323,9 @@ game_core.prototype.drawPlayer = function(player){
 
     if (this.ctx) {
         this.ctx.fillStyle = player.color;
+        if (player.userid === this.tagUserid) {
+            this.ctx.fillStyle = '#ff2222';
+        }
 
         this.ctx.save();
         this.ctx.translate(player.pos.x, player.pos.y);
