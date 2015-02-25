@@ -80,7 +80,7 @@
         //Enter the game server code. The game server handles
         //client connections looking for a game, creating games,
         //leaving games, joining games and ending games when they leave.
-    game_server = require('./game.server.js');
+    game_server = require('./js/game.server.js');
 
         //Socket.io will call this function when a client connects,
         //So we can send that client looking for a game to play,
@@ -94,11 +94,11 @@
         client.userid = UUID();
 
             //tell the player they connected, giving them their id
-        client.emit('onconnected', { id: client.userid } );
+        client.emit('onconnected', { userid: client.userid } );
 
             //now we can find them a game to play with someone.
             //if no game exists with someone waiting, they create one and wait.
-        game_server.findGame(client);
+        game_server.joinOrCreateGame(client);
 
             //Useful to know when someone connects
         console.log('\t socket.io:: player ' + client.userid + ' connected');
