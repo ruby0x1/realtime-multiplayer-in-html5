@@ -30,7 +30,7 @@
     game_server._dte = new Date().getTime();
         //a local queue of messages we delay if faking latency
     game_server.messages = [];
-    game_server.num_players = 3;
+    game_server.num_players = 2;
 
     setInterval(function() {
         game_server._dt = new Date().getTime() - game_server._dte;
