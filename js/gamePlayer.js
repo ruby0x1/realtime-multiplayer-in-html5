@@ -13,6 +13,7 @@ gamePlayer = function(player_instance) {
     this.color = 'rgba(255,255,255,0.1)';
     this.info_color = 'rgba(255,255,255,0.1)';
     this.userid = player_instance ? player_instance.userid : '';
+    this.name = player_instance ? player_instance.name : "anon";
 
         //These are used in moving us around later
     this.old_state = {pos:{x:0,y:0}, vel: {x: 0, y: 0}, rot: 0};

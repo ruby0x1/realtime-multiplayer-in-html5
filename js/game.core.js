@@ -1195,6 +1195,15 @@ game_core.prototype.client_on_otherclientcolorchange = function(data, userid) {
     }
 };
 
+game_core.prototype.client_onnamechange = function(data, userid) {
+    var player = this.get_player(this.players, userid);
+    if (player) {
+        player.name = data;
+    } else {
+        console.log("no player to update name");
+    }
+};
+
 game_core.prototype.client_onping = function(data) {
     this.net_ping = new Date().getTime() - parseFloat( data );
     this.net_latency = this.net_ping/2;
@@ -1233,10 +1242,13 @@ game_core.prototype.client_onnetmessage = function(data) {
                     this.client_ontagged(commanddata); break;
 
                 case 'a' : //add player requested
-                    this.client_onaddplayer(commanddata); break;
+                    this.client_onaddplayer(commanddata, morecommanddata); break;
 
                 case 'p' : //server ping
                     this.client_onping(commanddata); break;
+
+                case 'n' : //server ping
+                    this.client_onnamechange(commanddata, morecommanddata); break;
 
                 case 'c' : //other player changed colors
                     this.client_on_otherclientcolorchange(commanddata, morecommanddata); break;
@@ -1248,9 +1260,11 @@ game_core.prototype.client_onnetmessage = function(data) {
                 
 }; //client_onnetmessage
 
-game_core.prototype.client_onaddplayer = function(data) {
+game_core.prototype.client_onaddplayer = function(userid, name) {
     var playerHolder = {};
-    playerHolder.userid = data;
+    playerHolder.userid = userid;
+    playerHolder.name = name;
+    console.log("playerHolder ", playerHolder);
     playerHolder.emit = function() {
         console.log("this shouldn't be called i think, emit");
     };
@@ -1319,6 +1333,10 @@ game_core.prototype.client_refresh_fps = function() {
 
 }; //game_core.client_refresh_fps
 
+game_core.prototype.changeName = function(name) {
+    this.socket.send('n.' + name);
+};
+
 game_core.prototype.drawPlayer = function(player){
 
     if (this.ctx) {
@@ -1344,8 +1362,13 @@ game_core.prototype.drawPlayer = function(player){
 
         this.ctx.restore();
             //Draw a status update
-        this.ctx.fillStyle = player.info_color;
-        this.ctx.fillText(player.state, player.pos.x+10, player.pos.y + 4);
+        if (player.state !== 'local_pos(joined)' && player.state !== 'YOU local_pos(joined)') {
+            this.ctx.fillStyle = player.info_color;
+            this.ctx.fillText(player.state, player.pos.x+18, player.pos.y + 4);
+        }
+
+        this.ctx.fillStyle = player.color;
+        this.ctx.fillText(player.name, player.pos.x-14, player.pos.y + 24);
     }
 };
 
