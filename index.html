@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="gameApp">
 	<head>
 
 		<title> Real time multi-player games with HTML5</title>
@@ -18,19 +18,27 @@
 			<!-- Load the keyboard specific code --> 
 		<script type="text/javascript" src="lib/keyboard.js"></script>
 	 	
-	<!-- Game code -->
 
 	 		<!-- Load the common game code. -->
 		<script type="text/javascript" src="js/gamePlayer.js"></script>
 		<script type="text/javascript" src="js/game.core.js"></script>
 			<!-- Finally, Load the game client code. -->
 		<script type="text/javascript" src="js/client.js"></script>		
-
+		<script type="text/javascript" src="bower_components/angular/angular.min.js"></script>
+		<script src="js/name-controller.js"></script>
 	</head>
 
 	<body>
+		<div id="name" ng-controller="NameController">
+			<div class="name-change">
+				<div class="name-item">Name</div>
+				<input class="name-item name-input" type="text" ng-model="clientName" placeholder="Enter a name here">
+				<button class="name-item name-button" ng-click="changeName()">Update</button>
+			</div>
+		</div>
 		<canvas id="viewport">
 		</canvas>
+
 		<div id="lobby-container">
 			
 		</div>

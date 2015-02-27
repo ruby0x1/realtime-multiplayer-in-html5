@@ -71,7 +71,9 @@
         } else if(message_type == 'p') {
             client.send('s.p.' + message_parts[1]);
         } else if(message_type == 'c') {    //Client changed their color!
-            this.broadcast(client, message_parts[1]);
+            this.broadcastColor(client, message_parts[1]);
+        } else if(message_type == 'n') {    //Client changed their color!
+            this.broadcastName(client, message_parts[1]);
             // if(other_client)
             //     other_client.send('s.c.' + message_parts[1]);
         } else if(message_type == 'l') {    //A client is asking for lag simulation
@@ -80,12 +82,23 @@
 
     }; //game_server.onMessage
 
-    game_server.broadcast = function(client, color) {
+    game_server.broadcastColor = function(client, color) {
         for (var i = 0; i < client.game.players.length; i++) {
             var other_client = client.game.players[i];
-            if (other_client.userid !== client.userid) {
-                other_client.send('s.c.' + color + '.' + client.userid);
+            other_client.send('s.c.' + color + '.' + client.userid);
+        }
+    };
+
+    game_server.broadcastName = function(client, name) {
+        if (client && client.game && client.game.serverGamecore) {
+            var player = client.game.serverGamecore.get_player(client.game.serverGamecore.players, client.userid);
+            if (player) {
+                player.name = name;
             }
+        }
+        for (var i = 0; i < client.game.players.length; i++) {
+            var other_client = client.game.players[i];
+            other_client.send('s.n.' + name + '.' + client.userid);
         }
     };
 
@@ -161,8 +174,8 @@
             for (var i = 0; i < availableGame.players.length; i++) {
                 var existingplayer = availableGame.players[i];
                 if (existingplayer.userid !== p.userid) {
-                    existingplayer.send('s.a.' + p.userid);
-                    p.send('s.a.' + existingplayer.userid);
+                    existingplayer.send('s.a.' + p.userid + '.' + p.name);
+                    p.send('s.a.' + existingplayer.userid + '.' + existingplayer.name);
                 }
             }
             
