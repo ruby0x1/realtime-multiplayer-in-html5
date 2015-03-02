@@ -51,8 +51,9 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 
 /* The game_core class */
 
-    var game_core = function(players) { //game_instance
+    var game_core = function(socket, players) { //game_instance
 
+        console.log("socket ", socket);
             //Store a flag if we are the server
         this.isServer = players !== undefined;
 
@@ -153,6 +154,7 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
                 //This is the buffer that is the driving factor for our networking
             this.server_updates = [];
 
+            this.socket = socket;
                 //Connect to the socket.io server!
             this.client_connect_to_server();
 
@@ -333,9 +335,9 @@ game_core.prototype.process_input = function( player ) {
                 if(key == 'r') {
                     x_dir += 1;
                 }
-                if(key == 'd') {
-                    y_dir += 1;
-                }
+                // if(key == 'd') {
+                //     y_dir += 1;
+                // }
                 if(key == 'u') {
                     y_dir -= 1;
                 }
@@ -566,8 +568,8 @@ game_core.prototype.client_handle_input = function(){
     if( this.keyboard.pressed('S') ||
         this.keyboard.pressed('down')) {
 
-            y_dir = 1;
-            input.push('d');
+            // y_dir = 1;
+            // input.push('d');
 
         } //down
 
@@ -1053,7 +1055,7 @@ game_core.prototype.client_create_debug_gui = function() {
         this.colorcontrol.onChange(function(value) {
             this.playerself.color = value;
             localStorage.setItem('color', value);
-            this.socket.send('c.' + value);
+            this.changeName(this.playerself.name, value);
         }.bind(this));
 
         _playersettings.open();
@@ -1082,7 +1084,7 @@ game_core.prototype.client_create_debug_gui = function() {
             //When adding fake lag, we need to tell the server about it.
         var lag_control = _consettings.add(this, 'fake_lag').step(0.001).listen();
         lag_control.onChange(function(value){
-            this.socket.send('l.' + value);
+            this.socket.send('f.' + value);
         }.bind(this));
 
         _consettings.open();
@@ -1147,16 +1149,14 @@ game_core.prototype.client_onreadygame = function(data) {
 
     this.playerself.state = 'YOU ' + this.playerself.state;
 
-        //Make sure colors are synced up
-    this.socket.send('c.' + this.playerself.color);
-
+    this.changeName(this.playerself.name, this.playerself.color);
 }; //client_onreadygame
 
-game_core.prototype.client_onjoingame = function(data) {
-    this.playerself.state = 'connected.joined.waiting';
-    this.playerself.info_color = '#00bb00';
-    this.client_reset_positions();
-};
+// game_core.prototype.client_onjoingame = function(data) {
+//     // this.playerself.state = 'connected.joined.waiting';
+//     // this.playerself.info_color = '#00bb00';
+//     // this.client_reset_positions();
+// };
 
 game_core.prototype.client_onhostgame = function(data) {
 
@@ -1173,34 +1173,13 @@ game_core.prototype.client_onhostgame = function(data) {
     this.client_reset_positions();
 };
 
-game_core.prototype.client_onconnected = function(data) {
-
-    //The server responded that we are now in a game,
-    //this lets us store the information about ourselves and set the colors
-    //to show we are now ready to be playing.
-    this.playerself.userid = data.userid;
-    this.playerself.info_color = '#cc0000';
-    this.playerself.state = 'connected';
-    this.playerself.online = true;
-
-};
-
-game_core.prototype.client_on_otherclientcolorchange = function(data, userid) {
-    
+game_core.prototype.client_onplayerdatachange = function(userid, name, color) {
     var player = this.get_player(this.players, userid);
     if (player) {
-        player.color = data;
+        player.name = name;
+        player.color = color;
     } else {
-        console.log("no player to update color");
-    }
-};
-
-game_core.prototype.client_onnamechange = function(data, userid) {
-    var player = this.get_player(this.players, userid);
-    if (player) {
-        player.name = data;
-    } else {
-        console.log("no player to update name");
+        console.log("no player to update with data");
     }
 };
 
@@ -1220,6 +1199,7 @@ game_core.prototype.client_onnetmessage = function(data) {
     var subcommand = commands[1] || null;
     var commanddata = commands[2] || null;
     var morecommanddata = commands[3] || null;
+    var evenmorecommanddata = commands[4] || null;
 
     switch(command) {
         case 's': //server message
@@ -1229,8 +1209,8 @@ game_core.prototype.client_onnetmessage = function(data) {
                 case 'h' : //host a game requested
                     this.client_onhostgame(commanddata); break;
 
-                case 'j' : //join a game requested
-                    this.client_onjoingame(commanddata); break;
+                // case 'j' : //join a game requested
+                //     this.client_onjoingame(commanddata); break;
 
                 case 'r' : //ready a game requested
                     this.client_onreadygame(commanddata); break;
@@ -1247,11 +1227,11 @@ game_core.prototype.client_onnetmessage = function(data) {
                 case 'p' : //server ping
                     this.client_onping(commanddata); break;
 
-                case 'n' : //server ping
-                    this.client_onnamechange(commanddata, morecommanddata); break;
+                case 'b' : //server ping
+                    this.client_onplayerdatachange(commanddata, morecommanddata, evenmorecommanddata); break;
 
-                case 'c' : //other player changed colors
-                    this.client_on_otherclientcolorchange(commanddata, morecommanddata); break;
+                // case 'c' : //other player changed colors
+                //     this.client_on_otherclientcolorchange(commanddata, morecommanddata); break;
 
             } //subcommand
 
@@ -1263,7 +1243,7 @@ game_core.prototype.client_onnetmessage = function(data) {
 game_core.prototype.client_onaddplayer = function(userid, name) {
     var playerHolder = {};
     playerHolder.userid = userid;
-    playerHolder.name = name;
+    playerHolder.name = name === "undefined" ? 'anon' : name;
     console.log("playerHolder ", playerHolder);
     playerHolder.emit = function() {
         console.log("this shouldn't be called i think, emit");
@@ -1290,30 +1270,34 @@ game_core.prototype.client_ondisconnect = function(data) {
 
 }; //client_ondisconnect
 
+// game_core.prototype.client_ongamelist_recieved = function(data) {
+
+// };
+
 game_core.prototype.client_connect_to_server = function() {
         
             //Store a local reference to our connection to the server
-        this.socket = io.connect();
-
+        console.log("socket ", socket);
+        console.log("trying connecting to server");
             //When we connect, we are not 'connected' until we have a server id
             //and are placed in a game by the server. The server sends us a message for that.
-        this.socket.on('connect', function(){
-            this.playerself.state = 'connecting';
-        }.bind(this));
+        // this.socket.on('connect', function(){
+        //     console.log("connected successfully");
+        //     this.playerself.state = 'connecting';
+        // }.bind(this));
 
             //Sent when we are disconnected (network, server down, etc)
         this.socket.on('disconnect', this.client_ondisconnect.bind(this));
             //Sent each tick of the server simulation. This is our authoritive update
         this.socket.on('onserverupdate', this.client_onserverupdate_recieved.bind(this));
             //Handle when we connect to the server, showing state and storing id's.
-        this.socket.on('onconnected', this.client_onconnected.bind(this));
+        //this.socket.on('onconnected', this.client_onconnected.bind(this));
             //On error we just show that we are not connected for now. Can print the data.
         this.socket.on('error', this.client_ondisconnect.bind(this));
             //On message from the server, we parse the commands and send it to the handlers
         this.socket.on('message', this.client_onnetmessage.bind(this));
 
 }; //game_core.client_connect_to_server
-
 
 game_core.prototype.client_refresh_fps = function() {
 
@@ -1333,8 +1317,12 @@ game_core.prototype.client_refresh_fps = function() {
 
 }; //game_core.client_refresh_fps
 
-game_core.prototype.changeName = function(name) {
-    this.socket.send('n.' + name);
+game_core.prototype.changeName = function(name, color) {
+    this.socket.send('b.' + name + "." + color);
+};
+
+game_core.prototype.getOpenGamesList = function() {
+    this.socket.send('l');
 };
 
 game_core.prototype.drawPlayer = function(player){
