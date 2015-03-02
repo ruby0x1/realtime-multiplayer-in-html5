@@ -1,7 +1,7 @@
 html , body {
 	background: #282828;
 	color: #fff;
-	font-family: Helvetica;
+	font: 14px sans-serif;
 	padding: 0;
 }
 
@@ -41,4 +41,46 @@ html , body {
 	padding-left: 0.5em;
 }
 
+#lobby-container {
+	display: flex;
+	flex-direction: column;
+}
 
+.open-game-item {
+	margin-top: 0.2em;
+	background: #369;
+	width: 400px;
+	height: 2em;
+	display: flex;
+	flex-direction: row;
+}
+
+.open-game-detail {
+	flex-grow: 1;
+	text-align: center;
+	padding: 0.3em;
+}
+
+.open-game-button {
+	color: #fff;
+	background: #369;
+	border: none;
+	border-left: solid 1px #fff;
+}
+
+.open-game-button:hover {
+	color: #369;
+	background: #fff;
+}
+
+.create-button {
+color: #fff;
+background: #2DA38D;
+border: none;
+padding: 0.5em;
+margin: 1em;
+}
+
+.menu {
+	background-color: #DDF;
+}

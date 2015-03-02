@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html ng-app="gameApp">
+<html >
 	<head>
 
 		<title> Real time multi-player games with HTML5</title>
@@ -24,24 +24,23 @@
 		<script type="text/javascript" src="js/game.core.js"></script>
 			<!-- Finally, Load the game client code. -->
 		<script type="text/javascript" src="js/client.js"></script>		
-		<script type="text/javascript" src="bower_components/angular/angular.min.js"></script>
-		<script src="js/name-controller.js"></script>
+		<script src="bower_components/angular/angular.js"></script>
+		<script src="bower_components/angular-route/angular-route.js"></script>
+
+		<script src="js/client.app.js"></script>
+		<script src="lobby/current-game.factory.js"></script>
+		<script src="lobby/name-controller.js"></script>
+		<script src="lobby/lobby-controller.js"></script>
+		<script src="gameplay/gameplay-controller.js"></script>
 	</head>
 
-	<body>
-		<div id="name" ng-controller="NameController">
-			<div class="name-change">
-				<div class="name-item">Name</div>
-				<input class="name-item name-input" type="text" ng-model="clientName" placeholder="Enter a name here">
-				<button class="name-item name-button" ng-click="changeName()">Update</button>
-			</div>
-		</div>
-		<canvas id="viewport">
-		</canvas>
+	<body ng-app="gameApp">
+		<ul class="menu">
+		    <li><a href="#/lobby">LOBBY</a></li>
+		    <li><a href="#/gameplay">GAMEPLAY</a></li>
+		  </ul>
+		<div ng-view></div>
 
-		<div id="lobby-container">
-			
-		</div>
 	</body>
 
 </html>

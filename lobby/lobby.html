@@ -1,0 +1,17 @@
+<div id="name" ng-controller="NameController">
+    <div class="name-change">
+        <div class="name-item">Name</div>
+        <input class="name-item name-input" type="text" ng-model="clientName" placeholder="Enter a name here">
+        <button class="name-item name-button" ng-click="changeName()">Update</button>
+    </div>
+</div>
+<div id="lobby-container" ng-controller="LobbyController" ng-init="getGamesList()">
+    <div class="name-item">User ID = {{userid}}</div>
+    <div class="create-game">
+        <button class="create-button" ng-click="createGame()">CREATE A NEW GAME</button>
+    </div>
+    <div class="open-game-item" ng-repeat="game in games">
+        <div class="open-game-detail">{{game.id}} : {{game.currentPlayers}}/{{game.maxPlayers}}</div>
+        <button class="open-game-button" ng-click="joinGame(game)">JOIN</button>
+    </div>
+</div>

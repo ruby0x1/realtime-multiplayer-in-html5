@@ -1,6 +1,7 @@
-var app = angular.module('gameApp', []);
 
-app.controller('NameController', ['$scope', function($scope) {
+'use strict';
+
+angular.module('gameApp').controller('NameController', ['$scope', function NameController($scope) {
     $scope.clientName = 'Anon';
 
     $scope.changeName = function() {
