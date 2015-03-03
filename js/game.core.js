@@ -1134,7 +1134,7 @@ game_core.prototype.client_reset_positions = function() {
 
 }; //game_core.client_reset_positions
 
-game_core.prototype.client_onreadygame = function(data) {
+game_core.prototype.client_onstartgame = function(data) {
 
     var server_time = parseFloat(data.replace('-','.'));
 
@@ -1150,7 +1150,7 @@ game_core.prototype.client_onreadygame = function(data) {
     this.playerself.state = 'YOU ' + this.playerself.state;
 
     this.changeName(this.playerself.name, this.playerself.color);
-}; //client_onreadygame
+};
 
 // game_core.prototype.client_onjoingame = function(data) {
 //     // this.playerself.state = 'connected.joined.waiting';
@@ -1209,11 +1209,11 @@ game_core.prototype.client_onnetmessage = function(data) {
                 case 'h' : //host a game requested
                     this.client_onhostgame(commanddata); break;
 
-                // case 'j' : //join a game requested
-                //     this.client_onjoingame(commanddata); break;
+                case 'r' : //remove a player
+                    this.client_onremoveplayer(commanddata); break;
 
-                case 'r' : //ready a game requested
-                    this.client_onreadygame(commanddata); break;
+                case 's' : //start a game requested
+                    this.client_onstartgame(commanddata); break;
 
                 case 'e' : //end game requested
                     this.client_ondisconnect(commanddata); break;
@@ -1230,15 +1230,22 @@ game_core.prototype.client_onnetmessage = function(data) {
                 case 'b' : //server ping
                     this.client_onplayerdatachange(commanddata, morecommanddata, evenmorecommanddata); break;
 
-                // case 'c' : //other player changed colors
-                //     this.client_on_otherclientcolorchange(commanddata, morecommanddata); break;
-
             } //subcommand
 
         break; //'s'
     } //command
                 
 }; //client_onnetmessage
+
+game_core.prototype.client_onremoveplayer = function(userid) {
+    var players = this.players;
+    for (var i = 0; i < players.length; i++) {
+        if (players[i].userid === userid) {
+            this.players.splice(i, 1);
+            break;
+        }
+    }
+};
 
 game_core.prototype.client_onaddplayer = function(userid, name) {
     var playerHolder = {};
@@ -1263,7 +1270,7 @@ game_core.prototype.client_ondisconnect = function(data) {
     this.playerself.state = 'not-connected';
     this.playerself.online = false;
     this.players = [];
-    this.players.push(this.playerself);
+    // this.players.push(this.playerself);
 
     // this.players.other.info_color = 'rgba(255,255,255,0.1)';
     // this.players.other.state = 'not-connected';
