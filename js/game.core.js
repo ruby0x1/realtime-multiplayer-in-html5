@@ -51,13 +51,11 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
 
 /* The game_core class */
 
-    var game_core = function(socket, players) { //game_instance
+    var game_core = function(socket, players) {
 
         console.log("socket ", socket);
-            //Store a flag if we are the server
         this.isServer = players !== undefined;
 
-            //Used in collision etc.
         this.world = {
             width : 720,
             height : 480
@@ -166,19 +164,16 @@ if('undefined' != typeof(global)) frame_time = 45; //on server we run at 45ms, 2
             //localStorage.setItem('color', this.color);
             this.playerself.color = this.color;
 
-                //Make this only if requested
             if(String(window.location).indexOf('debug') != -1) {
                 this.client_create_debug_gui();
             }
 
-        } else { //if !server
-
+        } else {
             this.server_time = 0;
             this.laststate = {};
-
         }
 
-    }; //game_core.constructor
+    };
 
 //server side we set the 'game_core' class to a global type, so that it can use it anywhere.
 if( 'undefined' != typeof global ) {
@@ -222,13 +217,6 @@ game_core.prototype.getRandomPostion = function() {
         y: Math.random() * this.world.height
     };
 };
-/*
-    The player class
-
-        A simple class to maintain state of a player on screen,
-        as well as to draw that state when required.
-*/
-  
 
 /*
 
@@ -240,7 +228,6 @@ game_core.prototype.getRandomPostion = function() {
 
 */
 
-    //Main update loop
 game_core.prototype.update = function(t) {
     
         //Work out the delta time
@@ -256,16 +243,14 @@ game_core.prototype.update = function(t) {
         this.server_update();
     }
 
-        //schedule the next update
+    //schedule the next update
     this.updateid = window.requestAnimationFrame( this.update.bind(this), this.viewport );
-
-}; //game_core.update
+};
 
 game_core.prototype.intializeGame = function () {
     for (var i = 0; i < this.players.length; i++) {
         var player = this.players[i];
         var npos = this.getRandomPostion();
-        console.log('npos =', npos);
         player.pos = this.pos(npos);
     }
     this.tagUserid = this.players[0].userid;
@@ -404,15 +389,12 @@ game_core.prototype.server_update_physics = function() {
 
         for (var j = (i + 1); j < this.players.length; j++) {
             if (this.isColliding(this.players[i], this.players[j])) {
-                //console.log("players are colliding");
                 if (this.players[i].userid === this.tagUserid || this.players[j].userid === this.tagUserid) {
                     this.tagCollision = true;
-                    //console.log("tag player colliding");
                     newTagUserid = this.players[i].userid === this.tagUserid ? this.players[j].userid : this.players[i].userid;
                 }
             }
         }
-
         this.players[i].inputs = []; //we have cleared the input buffer, so remove this
     }
 
@@ -440,18 +422,52 @@ game_core.prototype.isColliding = function(a, b) {
     return (distance < circle1.radius + circle2.radius);
 };
 
+game_core.prototype.client_update_physics = function() {
+
+    //Fetch the new direction from the input buffer,
+    //and apply it to the state so we can smooth it in the visual state
+    if(this.client_predict) {
+
+        this.playerself.old_state.pos = this.pos( this.playerself.cur_state.pos );
+        this.playerself.old_state.vel = this.vel( this.playerself.cur_state.vel );
+        this.playerself.old_state.rot = this.playerself.cur_state.rot;
+        
+        var new_dir = this.process_input(this.playerself);
+        var new_rot = this.playerself.cur_state.rot + (new_dir.x * this.rotation_speed);
+        var new_vel = this.input_to_vec(new_dir, new_rot);
+
+        this.playerself.cur_state.rot = new_rot.fixed(4);
+        this.playerself.cur_state.vel = this.v_add( this.playerself.old_state.vel, new_vel);
+        this.playerself.cur_state.vel = this.dampen_velocity(this.playerself.cur_state.vel);
+        this.playerself.cur_state.vel = this.limit_velocity(this.playerself.cur_state.vel);
+        this.playerself.cur_state.pos = this.v_add( this.playerself.cur_state.pos, this.playerself.old_state.vel);
+
+        this.playerself.state_time = this.local_time;
+
+        this.playerself.pos.x = this.playerself.pos.x.fixed(4);
+        this.playerself.pos.y = this.playerself.pos.y.fixed(4);
+    }
+};
+
 game_core.prototype.updatePlayerPhysics = function(player) {
+
     player.old_state.pos = player.pos;
     player.old_state.vel = player.vel;
-    var new_dir = this.process_input(player);
     player.old_state.rot = player.rot;
-    player.rot = player.rot + (new_dir.x * this.rotation_speed);
-    var new_vel = this.input_to_vec(new_dir, player.rot);
-    //var new_vel = this.physics_movement_vector_from_direction(new_dir);
+
+    var new_dir = this.process_input(player);
+    var new_rot = player.rot + (new_dir.x * this.rotation_speed);
+    var new_vel = this.input_to_vec(new_dir, new_rot);
+
+    player.rot = new_rot.fixed(4);
     player.vel = this.v_add(player.old_state.vel, new_vel);
     player.vel = this.dampen_velocity(player.vel);
     player.vel = this.limit_velocity(player.vel);
     player.pos = this.v_add(player.vel, player.old_state.pos);
+
+    player.pos.x = player.pos.x.fixed(4);
+    player.pos.y = player.pos.y.fixed(4);
+
     return player;
 };
 
@@ -473,8 +489,14 @@ game_core.prototype.rot_to_vec = function(rot) {
 game_core.prototype.limit_velocity = function(vec) {
     var min = -this.max_velocity;
     var max = this.max_velocity;
-    var clampedx = Math.min(Math.max(vec.x, min), max);
-    var clampedy = Math.min(Math.max(vec.y, min), max);
+    var clampedx = Math.min(Math.max(vec.x, min), max).fixed(4);
+    var clampedy = Math.min(Math.max(vec.y, min), max).fixed(4);
+    if (clampedx < 0.02 && clampedx > -0.02) {
+        clampedx = 0
+    }
+    if (clampedy < 0.02 && clampedy > -0.02) {
+        clampedy = 0
+    }
     return {
         x: clampedx,
         y: clampedy
@@ -517,7 +539,7 @@ game_core.prototype.server_update = function(){
         this.players[i].emit('onserverupdate', this.laststate);
     }
 
-}; //game_core.server_update
+};
 
 
 game_core.prototype.handle_server_input = function(client, input, input_time, input_seq) {
@@ -555,7 +577,7 @@ game_core.prototype.client_handle_input = function(){
             x_dir = -1;
             input.push('l');
 
-        } //left
+        }
 
     if( this.keyboard.pressed('D') ||
         this.keyboard.pressed('right')) {
@@ -563,7 +585,7 @@ game_core.prototype.client_handle_input = function(){
             x_dir = 1;
             input.push('r');
 
-        } //right
+        }
 
     if( this.keyboard.pressed('S') ||
         this.keyboard.pressed('down')) {
@@ -571,7 +593,7 @@ game_core.prototype.client_handle_input = function(){
             // y_dir = 1;
             // input.push('d');
 
-        } //down
+        }
 
     if( this.keyboard.pressed('W') ||
         this.keyboard.pressed('up')) {
@@ -579,7 +601,7 @@ game_core.prototype.client_handle_input = function(){
             y_dir = -1;
             input.push('u');
 
-        } //up
+        }
 
     if(input.length) {
 
@@ -613,7 +635,7 @@ game_core.prototype.client_handle_input = function(){
 
     }
 
-}; //game_core.client_handle_input
+};
 
 game_core.prototype.client_process_net_prediction_correction = function() {
 
@@ -679,7 +701,7 @@ game_core.prototype.client_process_net_prediction_correction = function() {
             } // if(lastinputseq_index != -1)
         } //if my_last_input_on_server
 
-}; //game_core.client_process_net_prediction_correction
+};
 
 game_core.prototype.client_process_net_updates = function() {
 
@@ -800,13 +822,13 @@ game_core.prototype.smooth_player = function(players, pdata, target, previous, t
 
     var server_lerp_pos = pastpos ? this.v_lerp(pastpos, targetpos, time_point) : targetpos;
     var server_lerp_vel = pastvel ? this.v_lerp(pastvel, targetvel, time_point) : targetvel;
-    var server_lerp_rot = targetrot;
+    var server_lerp_rot = pastrot ? this.lerp(pastrot, targetrot, time_point) : targetrot;
 
     var player = this.get_player(this.players, pdata.userid);
 
     player.pos = this.v_lerp(player.pos, server_lerp_pos, this._pdt * this.client_smooth);
     player.vel = this.v_lerp(player.vel, server_lerp_vel, this._pdt * this.client_smooth);
-    player.rot = server_lerp_rot;
+    player.rot = this.lerp(server_lerp_rot, server_lerp_rot, this._pdt * this.client_smooth);
 
 };
 
@@ -868,59 +890,33 @@ game_core.prototype.client_onserverupdate_recieved = function(data){
                 //Handle the latest positions from the server
                 //and make sure to correct our local predictions, making the server have final say.
             this.client_process_net_prediction_correction();
-            
-        } //non naive
-
-}; //game_core.client_onserverupdate_recieved
+        }
+};
 
 game_core.prototype.client_update_local_position = function(){
 
     if(this.client_predict) {
 
-            //Work out the time we have since we updated the state
+        //Work out the time we have since we updated the state
         var t = (this.local_time - this.playerself.state_time) / this._pdt;
 
-            //Then store the states for clarity,
-        //var old_state = this.players.self.old_state.pos;
+        var old_state_pos = this.playerself.old_state.pos;
+        var old_state_vel = this.playerself.old_state.vel;
+        var old_state_rot = this.playerself.old_state.rot;
+
         var current_state_pos = this.playerself.cur_state.pos;
         var current_state_vel = this.playerself.cur_state.vel;
         var current_state_rot = this.playerself.cur_state.rot;
 
-            //Make sure the visual position matches the states we have stored
-        // this.playerself.pos = this.v_add( old_state, this.v_mul_scalar( this.v_sub(current_state,old_state), t )  );
-        this.playerself.pos = current_state_pos;
-        this.playerself.vel = current_state_vel;
-        this.playerself.rot = current_state_rot;
+        //Make sure the visual position matches the states we have stored
+        this.playerself.pos = this.v_add( old_state_pos, this.v_mul_scalar( this.v_sub(current_state_pos, old_state_pos), t )  );
+        this.playerself.vel = this.v_add( old_state_vel, this.v_mul_scalar( this.v_sub(current_state_vel, old_state_vel), t )  );
+        this.playerself.rot = old_state_rot + ((current_state_rot - old_state_rot) * t)
         
-            //We handle collision on client if predicting.
+        //We handle collision on client if predicting.
         this.check_boundry_collision( this.playerself );
-    }  //if(this.client_predict)
-}; //game_core.prototype.client_update_local_position
-
-game_core.prototype.client_update_physics = function() {
-
-        //Fetch the new direction from the input buffer,
-        //and apply it to the state so we can smooth it in the visual state
-
-    if(this.client_predict) {
-
-        this.playerself.old_state.pos = this.pos( this.playerself.cur_state.pos );
-        this.playerself.old_state.vel = this.vel( this.playerself.cur_state.vel );
-        this.playerself.old_state.rot = this.playerself.cur_state.rot;
-        
-
-        var new_dir = this.process_input(this.playerself);
-        var new_vel = this.input_to_vec(new_dir, this.playerself.cur_state.rot);
-
-        this.playerself.cur_state.rot = this.playerself.cur_state.rot + (new_dir.x * this.rotation_speed);
-        this.playerself.cur_state.vel = this.v_add( this.playerself.old_state.vel, new_vel);
-        this.playerself.cur_state.vel = this.dampen_velocity(this.playerself.cur_state.vel);
-        this.playerself.cur_state.vel = this.limit_velocity(this.playerself.cur_state.vel);
-        this.playerself.cur_state.pos = this.v_add( this.playerself.old_state.pos, this.playerself.cur_state.vel);
-        this.playerself.state_time = this.local_time;
     }
-
-}; //game_core.client_update_physics
+};
 
 game_core.prototype.dampen_velocity = function(vec) {
     return {
