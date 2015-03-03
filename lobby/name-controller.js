@@ -3,10 +3,11 @@
 
 angular.module('gameApp').controller('NameController', ['$scope', function NameController($scope) {
     $scope.clientName = 'Anon';
-
+    $scope.playerColor = localStorage.getItem('playerColor') || '#ffffff';
+    $scope.playerName = localStorage.getItem('playerName') || 'Anon';
     $scope.changeName = function() {
-        console.log(game);
-        game.changeName($scope.clientName);
+        localStorage.setItem("playerColor", $scope.playerColor);
+        localStorage.setItem("playerName", $scope.playerName);
     };
 }]);
 

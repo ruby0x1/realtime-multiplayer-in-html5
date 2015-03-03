@@ -2,8 +2,6 @@
 
 angular.module('gameApp').factory('Gamecore', function () {
 
-    
-
 
     var createGame = function() {
         console.log("instance of gamecore created");
@@ -26,6 +24,11 @@ angular.module('gameApp').factory('Gamecore', function () {
 
         //Finally, start the loop
         game.update( new Date().getTime() );
+
+        var playerColor = localStorage.getItem('playerColor') || '#ffffff';
+        var playerName = localStorage.getItem('playerName') || 'Anon';
+        game.changeName(playerName, playerColor);
+        
         return game;
     }
 

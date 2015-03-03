@@ -1,7 +1,9 @@
 <div id="name" ng-controller="NameController">
     <div class="name-change">
         <div class="name-item">Name</div>
-        <input class="name-item name-input" type="text" ng-model="clientName" placeholder="Enter a name here">
+        <input class="name-item name-input" type="text" ng-model="playerName" placeholder="Enter a name here">
+        <div class="name-item">Color</div>
+        <input class="color-picker" type="color" ng-model="playerColor" value="#ffffff">
         <button class="name-item name-button" ng-click="changeName()">Update</button>
     </div>
 </div>

@@ -84,3 +84,8 @@ margin: 1em;
 .menu {
 	background-color: #DDF;
 }
+
+.color-picker {
+	margin-top: 9px;
+	border: none;
+}
