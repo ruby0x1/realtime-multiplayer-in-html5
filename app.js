@@ -80,7 +80,7 @@
         //Enter the game server code. The game server handles
         //client connections looking for a game, creating games,
         //leaving games, joining games and ending games when they leave.
-    game_server = require('./game.server.js');
+    game_server = require('./js/game.server.js');
 
         //Socket.io will call this function when a client connects,
         //So we can send that client looking for a game to play,
@@ -94,15 +94,17 @@
         client.userid = UUID();
 
             //tell the player they connected, giving them their id
-        client.emit('onconnected', { id: client.userid } );
+        client.emit('onconnected', { userid: client.userid } );
 
             //now we can find them a game to play with someone.
             //if no game exists with someone waiting, they create one and wait.
-        game_server.findGame(client);
+        // game_server.joinOrCreateGame(client);
 
             //Useful to know when someone connects
         console.log('\t socket.io:: player ' + client.userid + ' connected');
-        
+
+        // add a listener for lobby updates
+        game_server.lobbyListeners.push(client);        
 
             //Now we want to handle some of the messages that clients will send.
             //They send messages here, and we send them to the game_server to handle.
@@ -123,10 +125,14 @@
                 //If the client was in a game, set by game_server.findGame,
                 //we can tell the game server to update that game state.
             if(client.game && client.game.id) {
-
-                //player leaving a game should destroy that game
-                game_server.endGame(client.game.id, client.userid);
-
+                var game = client.game;
+                if (game.players.length > 1) {
+                    // quit from game
+                    game_server.removePlayerFromGame(client);
+                } else {
+                    // destroy game
+                    game_server.endGame(client.game); //client.game.id, client.userid 
+                }
             } //client.game_id
 
         }); //client.on disconnect

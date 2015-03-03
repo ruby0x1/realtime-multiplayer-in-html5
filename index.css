@@ -1,17 +1,91 @@
 html , body {
-	background: #212121; 
-	color: #fff; 
-	font-family: Helvetica;
-	margin: 0; 
+	background: #282828;
+	color: #fff;
+	font: 14px sans-serif;
 	padding: 0;
 }
 
 #viewport {
-	border:solid 1px #333;
-	height : 480px;
+	border: solid 1px #676767;
+	height: 480px;
 	margin: auto;
-	left:0; right:0; top:0; bottom:0;
-	position: absolute;
-	width : 720px;
-	z-index:100;
+	width: 720px;
+	z-index: 100;
+	background: #000;
+}
+
+.name-change {
+	display: flex;
+}
+
+.name-item {
+	margin: 1em;
+}
+
+.name-button {
+	color: white;
+	background: #333;
+	border: 1px solid #9B794C
+}
+
+.name-button:active {
+	color: #333;
+	background: #eee;
+	border: 1px solid #222;
+}
+
+.name-input {
+	background: #333;
+	color: #D7D7D7;
+	border: solid 1px #446789;
+	padding-left: 0.5em;
+}
+
+#lobby-container {
+	display: flex;
+	flex-direction: column;
+}
+
+.open-game-item {
+	margin-top: 0.2em;
+	background: #369;
+	width: 400px;
+	height: 2em;
+	display: flex;
+	flex-direction: row;
+}
+
+.open-game-detail {
+	flex-grow: 1;
+	text-align: center;
+	padding: 0.3em;
+}
+
+.open-game-button {
+	color: #fff;
+	background: #369;
+	border: none;
+	border-left: solid 1px #fff;
+}
+
+.open-game-button:hover {
+	color: #369;
+	background: #fff;
+}
+
+.create-button {
+color: #fff;
+background: #2DA38D;
+border: none;
+padding: 0.5em;
+margin: 1em;
+}
+
+.menu {
+	background-color: #DDF;
+}
+
+.color-picker {
+	margin-top: 9px;
+	border: none;
 }
