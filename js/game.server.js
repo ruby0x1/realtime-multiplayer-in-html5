@@ -31,6 +31,7 @@
         //a local queue of messages we delay if faking latency
     game_server.messages = [];
     game_server.num_players = 2;
+    game_server.lobbyListeners = [];
 
     setInterval(function() {
         game_server._dt = new Date().getTime() - game_server._dte;
@@ -76,6 +77,8 @@
             this.broadcastPlayerData(client, message_parts[1], message_parts[2]);
         } else if(message_type == 'c') {    //make a new game
             this.makeGameAndJoinIt(client);
+        } else if(message_type == 'q') {    //make a new game
+            this.removePlayerFromGame(client);
         } else if(message_type == 'j') {    //go into new game
             this.getAndjoinGame(client, message_parts[1]);
         } else if(message_type == 'b') {    //Client changed their color!
@@ -85,6 +88,36 @@
         }
 
     }; //game_server.onMessage
+
+    game_server.removePlayerFromGame = function(client) {
+        if (client.game) {
+            var players = client.game.players;
+            for (var i = 0; i < players.length; i++) {
+                if (players[i].userid === client.userid) {
+                    players.splice(i, 1);
+                    break;
+                }
+            }
+            for (var i = 0; i < players.length; i++) {
+                players[i].send('s.r.' + client.userid);
+            }
+            if (players.length < 1) {
+                this.endGame(client.game);
+            }
+            client.game = undefined;
+        }
+        this.lobbyListeners.push(client);
+        this.notifyLobbyListeners();
+    };
+
+    game_server.removeLobbyListener = function(userid) {
+        for (var i = 0; i < game_server.lobbyListeners.length; i++) {
+            if (game_server.lobbyListeners[i].userid === userid) {
+                game_server.lobbyListeners.splice(i, 1)
+                break;
+            }
+        }
+    };
 
     game_server.getAndjoinGame = function(client, gameid) {
         var game = this.games[gameid];
@@ -99,7 +132,7 @@
         }
     };
 
-    game_server.sendOpenGameList = function(client) {
+    game_server.getOpenGameList = function() {
         openGames = [];
         var self = this;
         for(var gameid in this.games) {
@@ -115,6 +148,11 @@
                 });
             }
         }
+        return openGames;
+    }
+
+    game_server.sendOpenGameList = function(client) {
+        var openGames = this.getOpenGameList();
         console.log("number of open games are ", openGames.length);
         client.emit('ongamelist', openGames);
     };
@@ -136,19 +174,6 @@
             other_client.send('s.b.' + client.userid + "." + name + '.' + color);
         }
     };
-
-    // game_server.broadcastName = function(client, name) {
-    //     if (client && client.game && client.game.serverGamecore) {
-    //         var player = client.game.serverGamecore.get_player(client.game.serverGamecore.players, client.userid);
-    //         if (player) {
-    //             player.name = name;
-    //         }
-    //     }
-    //     for (var i = 0; i < client.game.players.length; i++) {
-    //         var other_client = client.game.players[i];
-    //         other_client.send('s.n.' + name + '.' + client.userid);
-    //     }
-    // };
 
     game_server.onInput = function(client, parts) {
             //The input commands come in like u-l,
@@ -193,8 +218,16 @@
         player.send('s.h.'+ String(game.serverGamecore.local_time).replace('.','-'));
         console.log('server host at  ' + game.serverGamecore.local_time);
         this.log('player ' + player.userid + ' created a game with id ' + game.id);
+        this.notifyLobbyListeners();
+        // return game;
+    };
 
-        return game;
+    game_server.notifyLobbyListeners = function() {
+        var openGames = this.getOpenGameList();
+        var listeners = this.lobbyListeners;
+        for (var i = 0; i < listeners.length; i++) {
+            listeners[i].emit("ongamelist", openGames);
+        }
     };
 
     // notify all the players that the game has started
@@ -203,7 +236,8 @@
         console.log("start, availgame players length ", game.players.length);
         game.serverGamecore.intializeGame();
         for (var i = 0; i < game.players.length; i++) {
-            game.players[i].send('s.r.'+ String(game.serverGamecore.local_time).replace('.','-'));
+            game.players[i].send('s.s.'+ String(game.serverGamecore.local_time).replace('.','-'));
+            this.removeLobbyListener(game.players[i].userid);
         }
     }; //game_server.startGame
 
@@ -231,6 +265,7 @@
         if (game.players.length === this.num_players) {
             this.startGame(game);
         }
+        this.notifyLobbyListeners();
     };
 
     game_server.joinOrCreateGame = function(client) {
@@ -259,58 +294,22 @@
     };
 
     //we are requesting to kill a game in progress.
-    game_server.endGame = function(gameid, userid) {
+    game_server.endGame = function(game) {
 
-        var thegame = this.games[gameid];
-
-        if(thegame) {
-
-                //stop the game updates immediate
-            thegame.serverGamecore.stop_update();
-
-                //if the game has two players, the one is leaving
-            // if(thegame.players.length > 1) {
-
-            //         //send the players the message the game is ending
-            //     if(userid == thegame.player_host.userid) {
-
-            //             //the host left, oh snap. Lets try join another game
-
-            //         if(thegame.player_client) {
-            //                 //tell them the game is over
-            //             thegame.player_client.send('s.e');
-            //                 //now look for/create a new game.
-            //             this.joinOrCreateGame(thegame.player_client);
-            //         }
-                    
-            //     } else {
-            //             //the other player left, we were hosting
-            //         if(thegame.player_host) {
-            //                 //tell the client the game is ended
-            //             thegame.player_host.send('s.e');
-            //                 //i am no longer hosting, this game is going down
-            //             thegame.player_host.host = false;
-            //                 //now look for/create a new game.
-            //             this.joinOrCreateGame(thegame.player_host);
-            //         }
-            //     }
-            // }
-
-            for (var i = 0; i < thegame.players.length; i++) {
-                var player = thegame.players[i];
+        if(game) {
+            // stop the game updates immediate
+            game.serverGamecore.stop_update();
+            // notify all players
+            for (var i = 0; i < game.players.length; i++) {
+                var player = game.players[i];
                 player.send('s.e');
-                this.joinOrCreateGame(player);
             }
-
-            delete this.games[gameid];
+            delete this.games[game.id];
             this.game_count--;
-
             this.log('game removed. there are now ' + this.game_count + ' games' );
-
         } else {
             this.log('that game was not found!');
         }
-
     }; //game_server.endGame
 
 

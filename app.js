@@ -102,7 +102,9 @@
 
             //Useful to know when someone connects
         console.log('\t socket.io:: player ' + client.userid + ' connected');
-        
+
+        // add a listener for lobby updates
+        game_server.lobbyListeners.push(client);        
 
             //Now we want to handle some of the messages that clients will send.
             //They send messages here, and we send them to the game_server to handle.
@@ -123,10 +125,14 @@
                 //If the client was in a game, set by game_server.findGame,
                 //we can tell the game server to update that game state.
             if(client.game && client.game.id) {
-
-                //player leaving a game should destroy that game
-                game_server.endGame(client.game.id, client.userid);
-
+                var game = client.game;
+                if (game.players.length > 1) {
+                    // quit from game
+                    game_server.removePlayerFromGame(client);
+                } else {
+                    // destroy game
+                    game_server.endGame(client.game); //client.game.id, client.userid 
+                }
             } //client.game_id
 
         }); //client.on disconnect

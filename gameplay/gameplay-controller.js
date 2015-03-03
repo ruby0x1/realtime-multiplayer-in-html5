@@ -9,35 +9,23 @@ angular.module('gameApp.gameplay', ['ngRoute'])
   });
 }])
 
-.controller('GameplayController', ['$scope', 'CurrentGame', function GameplayController($scope, currentGame) {
+.controller('GameplayController', ['$scope', 'CurrentGame', 'Gamecore', function GameplayController($scope, currentGame, gamecore) {
 
     $scope.socket = window.socket;
-    $scope.game;
+
+    $scope.$on('$locationChangeStart', function( event ) {
+        // gamecore.resetGame();
+        $scope.socket.send('q');
+    });
 
     $scope.createGameCore = function() {
-        console.log("core created");
-        $scope.game = new game_core($scope.socket);
+        // gamecore.resetGame();
+        var playerself = gamecore.getPlayerSelf(); // todo remove this stuff
+        playerself.userid = currentGame.getUserId();
+        playerself.info_color = '#cc0000';
+        playerself.state = 'connected';
+        playerself.online = true;
 
-            //Fetch the viewport
-        $scope.game.viewport = document.getElementById('viewport');
-            
-            //Adjust their size
-        $scope.game.viewport.width = $scope.game.world.width;
-        $scope.game.viewport.height = $scope.game.world.height;
-
-            //Fetch the rendering contexts
-        $scope.game.ctx = $scope.game.viewport.getContext('2d');
-
-            //Set the draw style for the font
-        $scope.game.ctx.font = '11px "Helvetica"';
-
-            //Finally, start the loop
-        $scope.game.update( new Date().getTime() );
-        $scope.game.playerself.userid = currentGame.getUserId();
-        $scope.game.playerself.info_color = '#cc0000';
-        $scope.game.playerself.state = 'connected';
-        $scope.game.playerself.online = true;
-        window.game = $scope.game;
         var gameId = currentGame.getGameId();
         if (gameId) {
             $scope.socket.send('j.' + gameId);
