@@ -65,17 +65,14 @@
         //Create a socket.io instance using our express server
     var sio = io.listen(server);
 
-        //Configure the socket.io connection settings.
-        //See http://socket.io/
-    sio.configure(function (){
+    //Configure the socket.io connection settings.
+    //See http://socket.io/
 
-        sio.set('log level', 0);
 
-        sio.set('authorization', function (handshakeData, callback) {
-          callback(null, true); // error first callback style
-        });
-
+    sio.set('authorization', function (handshakeData, callback) {
+        callback(null, true); // error first callback style
     });
+
 
         //Enter the game server code. The game server handles
         //client connections looking for a game, creating games,
