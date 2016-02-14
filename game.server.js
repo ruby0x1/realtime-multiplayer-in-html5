@@ -1,6 +1,6 @@
-/*  Copyright (c) 2012 Sven "FuzzYspo0N" Bergström
+/*  Copyright 2012-2016 Sven "underscorediscovery" Bergström
     
-    written by : http://underscorediscovery.com
+    written by : http://underscorediscovery.ca
     written for : http://buildnewgames.com/real-time-multiplayer/
     
     MIT Licensed.
