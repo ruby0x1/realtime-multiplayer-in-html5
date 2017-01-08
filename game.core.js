@@ -192,6 +192,9 @@ game_core.prototype.stop_update = function() {  window.cancelAnimationFrame( thi
 game_core.prototype.lerp = function(p, n, t) { var _t = Number(t); _t = (Math.max(0, Math.min(1, _t))).fixed(); return (p + _t * (n - p)).fixed(); };
     //Simple linear interpolation between 2 vectors
 game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x, t), y:this.lerp(v.y, tv.y, t) }; };
+    //convert deg to rad
+
+
 
 /*
     The player class
@@ -209,6 +212,7 @@ game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x,
             //Set up initial values for our state information
         this.pos = { x:0, y:0 };
         this.size = { x:16, y:16, hx:8, hy:8 };
+        this.rot = 20;
         this.state = 'not-connected';
         this.color = 'rgba(255,255,255,0.1)';
         this.info_color = 'rgba(255,255,255,0.1)';
@@ -243,17 +247,24 @@ game_core.prototype.v_lerp = function(v,tv,t) { return { x: this.lerp(v.x, tv.x,
   
     game_player.prototype.draw = function(){
 
-            //Set the color for this player
         game.ctx.fillStyle = this.color;
 
-            //Draw a rectangle for us
-        game.ctx.fillRect(this.pos.x - this.size.hx, this.pos.y - this.size.hy, this.size.x, this.size.y);
+        game.ctx.save();
+        game.ctx.translate(this.pos.x, this.pos.y);
 
+        game.ctx.rotate(this.to_rad(this.rot));
+
+            //Draw a rectangle for us
+        game.ctx.fillRect(-this.size.hx, -this.size.hy, this.size.x, this.size.y);
+
+        game.ctx.restore();
             //Draw a status update
         game.ctx.fillStyle = this.info_color;
         game.ctx.fillText(this.state, this.pos.x+10, this.pos.y + 4);
     
     }; //game_player.draw
+
+    game_player.prototype.to_rad = function(deg) { return deg * 0.017453292519943295; };
 
 /*
 
